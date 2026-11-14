@@ -1,0 +1,16 @@
+# Normalize source and data text files to LF in Git.
+*.py text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+
+# Keep generated Python bytecode out of text processing.
+*.pyc binary
+__pycache__/** binary
+
+# Treat image assets as binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.bmp binary
