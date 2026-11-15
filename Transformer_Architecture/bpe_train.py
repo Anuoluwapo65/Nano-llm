@@ -16,8 +16,12 @@ from tokenizers import Tokenizer
 import matplotlib.pyplot as plt
 
 from bpe_dataset import TranslationDataset
+from bpe_encoder import encode_file_pt
 from bpe_tokenizer import load_train_bpe_forward
 from train_full import Full_train, ModelConfig
+
+
+DATA_DIR = Path(__file__).resolve().parent
 
 
 def get_device(verbose: bool = False, seed: int = 42) -> torch.device:
@@ -68,7 +72,7 @@ class BucketBatchSampler(Sampler[list[int]]):
         self,
         lengths: Sequence[int],
         batch_size: int,
-        bucket_size: int = 2_048,
+        bucket_size: int = 2048,
         shuffle: bool = True,
         drop_last: bool = False,
         seed: int = 0,
@@ -197,14 +201,36 @@ def exp_loss(loss: float | torch.Tensor) -> float:
 
 def load_tokenizer(path: str = "bpe_bpe_joint.json") -> Tokenizer:
     tokenizer_path = Path(path)
+    if not tokenizer_path.is_absolute():
+        tokenizer_path = DATA_DIR / tokenizer_path
     if tokenizer_path.is_file():
         return Tokenizer.from_file(str(tokenizer_path))
-    return load_train_bpe_forward(vocab_size=10_000, save_prefix="bpe")
+    return load_train_bpe_forward(
+        vocab_size=10_000,
+        save_prefix=str(DATA_DIR / "bpe"),
+        src_corpus_file=str(DATA_DIR / "trainsrc.txt"),
+        tgt_corpus_file=str(DATA_DIR / "traintgt.txt"),
+    )
+
+
+def ensure_encoded_training_data(tokenizer: Tokenizer) -> None:
+    """Create the tensor dataset consumed by ``TranslationDataset``."""
+    encode_file_pt(
+        tokenizer,
+        str(DATA_DIR / "trainsrc.txt"),
+        str(DATA_DIR / "Train.src_ids.pt"),
+    )
+    encode_file_pt(
+        tokenizer,
+        str(DATA_DIR / "traintgt.txt"),
+        str(DATA_DIR / "Train.tgt_ids.pt"),
+    )
 
 
 def build_dataloader(tokenizer: Tokenizer, config: TrainConfig) -> tuple[TranslationDataset, DataLoader]:
+    ensure_encoded_training_data(tokenizer)
     dataset = TranslationDataset(
-        file_prefix="Train",
+        file_prefix=str(DATA_DIR / "Train"),
         tokenizer=tokenizer,
         max_seq_len=config.max_seq_len,
         is_debug=config.debug,
@@ -253,7 +279,11 @@ def train(config: TrainConfig, tokenizer: Tokenizer) -> Full_train:
         optimizer.zero_grad()
         loss_step = 0.0
         for _ in range(config.gradient_steps):
-            batch = next(batches)
+            try:
+                batch = next(batches)
+            except StopIteration:
+                batches = iter(dataloader)
+                batch = next(batches)
             encoder_input_ids = batch["encoder_input_ids"].to(config.device)
             decoder_input_ids = batch["decoder_input_ids"].to(config.device)
             enc_mask = batch["encoder_mask"].to(config.device)

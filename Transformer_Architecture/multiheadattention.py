@@ -47,7 +47,9 @@ def scaled_dot_product_attention(q, k, v, mask = None):
 
 
 def create_mask(key_len:int, query_len:int):
-    return torch.tril(torch.ones(query_len, key_len))[None, None, :, :]
+    return torch.tril(
+        torch.ones(query_len, key_len, dtype=torch.bool)
+    )[None, None, :, :]
 
 
 

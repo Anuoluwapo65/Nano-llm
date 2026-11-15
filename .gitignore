@@ -1,0 +1,7 @@
+# Generated model and encoded dataset artifacts
+Transformer_Architecture/*.pt
+Transformer_Architecture/*.pth
+__pycache__/
+*.pyc
+__pycache__/
+*.pyc

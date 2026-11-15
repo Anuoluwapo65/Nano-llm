@@ -1,2 +1,2 @@
-Transfomer[[:space:]]Architectures/trainsrc.txt filter=lfs diff=lfs merge=lfs -text
-Transfomer[[:space:]]Architectures/traintgt.txt filter=lfs diff=lfs merge=lfs -text
+Transformer_Architecture/trainsrc.txt filter=lfs diff=lfs merge=lfs -text
+Transformer_Architecture/traintgt.txt filter=lfs diff=lfs merge=lfs -text
